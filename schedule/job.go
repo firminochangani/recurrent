@@ -3,7 +3,7 @@ package schedule
 import (
 	"context"
 	"errors"
-	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -13,8 +13,10 @@ type Job struct {
 	interval int
 	ticker   *time.Ticker
 
-	lock      *sync.RWMutex
-	isRunning bool
+	// isRunning is read and written in different places simultaneously thus causing data race issues
+	// hence the atomic type
+	isRunning atomic.Bool
+
 	// Due to potential long-running tasks, it's going to be useful to interrupt cancel
 	// the context as soon as the job is closed to
 	cancelCtx context.CancelCauseFunc
@@ -49,16 +51,14 @@ func (j *Job) run(ctx context.Context) {
 	jobCtx, cancel := context.WithCancelCause(ctx)
 	j.cancelCtx = cancel
 
-	j.isRunning = true
+	j.isRunning.Store(true)
 
 	for {
 		<-j.ticker.C
 
 		select {
 		case <-j.done:
-			j.lock.Lock()
-			j.isRunning = false
-			j.lock.Unlock()
+			j.isRunning.Store(false)
 			return
 		default:
 			j.handler(jobCtx)
@@ -69,10 +69,6 @@ func (j *Job) run(ctx context.Context) {
 func (j *Job) stop() {
 	j.scheduler.logger.Infof("Stopping the job %s", j.id)
 
-	// Stop further tickers which is rather helpful to prevent the ticker from delaying
-	// the job stoppage
-	// j.ticker.Stop()
-
 	// send a signal to the job handler to inform it about the stoppage of the job
 	if j.cancelCtx != nil {
 		j.cancelCtx(ErrJobStopped)
@@ -82,12 +78,7 @@ func (j *Job) stop() {
 	close(j.done)
 
 	// wait until the job is actually stopped
-	for {
-		j.lock.RLock()
-		if !j.isRunning {
-			break
-		}
-		j.lock.RUnlock()
+	for j.isRunning.Load() {
 	}
 
 	j.scheduler.logger.Infof("Job %s has been stopped", j.id)

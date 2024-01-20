@@ -39,7 +39,6 @@ func (s *Schedule) Every(interval int) *Job {
 	return &Job{
 		scheduler: s,
 		interval:  interval,
-		lock:      &sync.RWMutex{},
 		id:        ulid.Make().String(),
 		done:      make(chan interface{}),
 	}
