@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/flowck/recurrently/schedule"
+	"github.com/flowck/schedule"
 )
 
 func TestSchedule(t *testing.T) {
