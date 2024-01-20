@@ -1,0 +1,9 @@
+name: pr
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
