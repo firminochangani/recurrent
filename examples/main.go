@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/flowck/schedule"
+	"github.com/flowck/schedule/schedule"
 )
 
 func main() {

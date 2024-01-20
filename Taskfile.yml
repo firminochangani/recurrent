@@ -1,0 +1,18 @@
+version: 3
+
+tasks:
+  test:
+    cmds:
+      - go test -v -race ./...
+
+  lint:docker:
+    cmds:
+      - docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:v1.54.0 golangci-lint run -v
+
+  lint:
+    cmds:
+      - golangci-lint run
+
+  lint:fix:
+    cmds:
+      - golangci-lint run --fix
