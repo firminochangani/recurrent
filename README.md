@@ -4,6 +4,9 @@
 
 A Go package to run tasks recurrently. - Inspired by the Python lib [schedule](https://github.com/dbader/schedule) 
 
+- [x] Parallel execution of jobs
+- [x] Cancellation of running jobs via context 
+
 ## Usage
 
 ```go
