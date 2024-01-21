@@ -1,8 +1,8 @@
-# schedule
+# recurrent
 
 [![main](https://github.com/flowck/schedule/actions/workflows/main.yml/badge.svg)](https://github.com/flowck/schedule/actions/workflows/main.yml)
 
-Golang job scheduling for humans. Run Go functions periodically using a friendly syntax. - Inspired by Python lib [schedule](https://github.com/dbader/schedule)
+A Go package to run tasks recurrently. - Inspired by the Python lib [schedule](https://github.com/dbader/schedule) 
 
 ## Usage
 
@@ -14,20 +14,20 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/flowck/schedule"
+	"github.com/flowck/recurrent/recurrent"
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	s := schedule.New()
+	s := recurrent.New()
 
-	s.Every(10).Seconds().Do(func(ctx context.Context) {
+	s.Every(time.Second * 1).Do(func(ctx context.Context) {
 		fmt.Println("--->", time.Now())
 	})
 
-	s.Every(30).Seconds().Do(func(ctx context.Context) {
+	s.Every(time.Second * 2).Do(func(ctx context.Context) {
 		fmt.Println("--->", time.Now())
 	})
 

@@ -1,4 +1,4 @@
-module github.com/flowck/schedule
+module github.com/flowck/recurrent
 
 go 1.21
 

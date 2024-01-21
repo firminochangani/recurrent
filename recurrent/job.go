@@ -1,4 +1,4 @@
-package schedule
+package recurrent
 
 import (
 	"context"
@@ -9,9 +9,10 @@ import (
 
 var ErrJobStopped = errors.New("the job has been stopped")
 
+type JobHandler func(ctx context.Context)
+
 type Job struct {
-	interval int
-	ticker   *time.Ticker
+	ticker *time.Ticker
 
 	// isRunning is read and written in different places simultaneously thus causing data race issues
 	// hence the atomic type
@@ -24,27 +25,16 @@ type Job struct {
 
 	id string
 
-	// having a reference to the scheduler will allow us to cal
+	// having a reference to the manager will allow us to cal
 	// job.Do(func(ctx context.Content) {}) and finally have the job
-	// appended to the scheduler
-	scheduler *Schedule
-	handler   JobHandler
-}
-
-type JobHandler func(ctx context.Context)
-
-func (j *Job) Second() *Job {
-	return j
-}
-
-func (j *Job) Seconds() *Job {
-	j.ticker = time.NewTicker(time.Duration(j.interval) * time.Second)
-	return j
+	// appended to the manager
+	manager *Manager
+	handler JobHandler
 }
 
 func (j *Job) Do(handler JobHandler) *Job {
 	j.handler = handler
-	j.scheduler.appendJob(j)
+	j.manager.appendJob(j)
 
 	return j
 }
@@ -75,7 +65,7 @@ func (j *Job) runHandler(ctx context.Context) {
 }
 
 func (j *Job) stop() {
-	j.scheduler.logger.Infof("Stopping the job %s", j.id)
+	j.manager.logger.Infof("Stopping the job %s", j.id)
 
 	// send a signal to the job handler to inform it about the stoppage of the job
 	if j.cancelCtx != nil {
@@ -89,26 +79,7 @@ func (j *Job) stop() {
 	for j.isRunning.Load() {
 	}
 
-	j.scheduler.logger.Infof("Job %s has been stopped", j.id)
+	j.manager.logger.Infof("Job %s has been stopped", j.id)
 }
 
-func (j *Job) Minute()    {}
-func (j *Job) Minutes()   {}
-func (j *Job) Hour()      {}
-func (j *Job) Hours()     {}
-func (j *Job) Day()       {}
-func (j *Job) Days()      {}
-func (j *Job) Week()      {}
-func (j *Job) Weeks()     {}
-func (j *Job) Monday()    {}
-func (j *Job) Tuesday()   {}
-func (j *Job) Wednesday() {}
-func (j *Job) Thursday()  {}
-func (j *Job) Friday()    {}
-func (j *Job) Saturday()  {}
-func (j *Job) Sunday()    {}
-func (j *Job) Tag()       {}
-func (j *Job) At()        {}
-func (j *Job) To()        {}
-func (j *Job) Until()     {}
-func (j *Job) ShouldRun() {}
+func (j *Job) Until() {}
