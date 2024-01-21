@@ -67,3 +67,42 @@ func TestSchedule_Clear(t *testing.T) {
 	// Then expect
 	assert.Empty(t, s.GetJobs())
 }
+
+func TestSchedule_CancelJob(t *testing.T) {
+	s := schedule.New()
+
+	// Given
+	job := s.Every(1).Seconds().Do(func(ctx context.Context) {
+		t.Log("Handler ran successfully")
+	})
+	require.Contains(t, s.GetJobs(), job)
+
+	// Do
+	s.CancelJob(job)
+
+	// Expect
+	assert.NotContains(t, s.GetJobs(), job)
+}
+
+func TestSchedule_RunAll(t *testing.T) {
+	s := schedule.New()
+	result := make([]int, 3)
+
+	handler := func(idx int) func(ctx context.Context) {
+		return func(ctx context.Context) {
+			result[idx] = idx
+			t.Logf("Job %d ran successfully", idx)
+		}
+	}
+
+	// Given
+	s.Every(1).Seconds().Do(handler(0))
+	s.Every(1).Seconds().Do(handler(1))
+	s.Every(1).Seconds().Do(handler(2))
+
+	// Do
+	s.RunAll(context.Background(), time.Millisecond*10)
+
+	// Expect
+	assert.Equal(t, []int{0, 1, 2}, result, "all jobs to have been run and mutated the 'result' slice")
+}

@@ -42,9 +42,11 @@ func (j *Job) Seconds() *Job {
 	return j
 }
 
-func (j *Job) Do(handler JobHandler) {
+func (j *Job) Do(handler JobHandler) *Job {
 	j.handler = handler
 	j.scheduler.appendJob(j)
+
+	return j
 }
 
 func (j *Job) run(ctx context.Context) {
@@ -64,6 +66,12 @@ func (j *Job) run(ctx context.Context) {
 			j.handler(jobCtx)
 		}
 	}
+}
+
+func (j *Job) runHandler(ctx context.Context) {
+	j.isRunning.Store(true)
+	j.handler(ctx)
+	j.isRunning.Store(false)
 }
 
 func (j *Job) stop() {

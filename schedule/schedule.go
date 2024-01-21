@@ -3,6 +3,7 @@ package schedule
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/oklog/ulid/v2"
 )
@@ -52,9 +53,20 @@ func (s *Schedule) appendJob(job *Job) {
 	s.logger.Infof("Job with id %s has been appended to the scheduler", job.id)
 }
 
-func (s *Schedule) RunAll(delayInSeconds int) {}
+// RunAll Runs all jobs regardless if they are scheduled to run or not.
+func (s *Schedule) RunAll(ctx context.Context, delay time.Duration) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
-// GetJobs Return all jobs
+	s.logger.Debugf("Running all %d jobs with %d of delay in between", len(s.jobs), delay)
+
+	for _, job := range s.jobs {
+		job.runHandler(ctx)
+		time.Sleep(delay)
+	}
+}
+
+// GetJobs Returns all jobs
 func (s *Schedule) GetJobs() []*Job {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -69,7 +81,7 @@ func (s *Schedule) GetJobs() []*Job {
 	return result
 }
 
-// Clear Stop all jobs and then delete them
+// Clear Stops all jobs and then delete them from the schedule
 func (s *Schedule) Clear() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -80,7 +92,14 @@ func (s *Schedule) Clear() {
 	}
 }
 
+// CancelJob Stops a job a removes it from the schedule
 func (s *Schedule) CancelJob(job *Job) {
+	job.stop()
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	delete(s.jobs, job.id)
 }
 
 func (s *Schedule) cancelAllJobs() {
